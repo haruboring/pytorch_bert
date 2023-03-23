@@ -79,7 +79,7 @@ class IMDBBertDataset(Dataset):
             t = [1, 0]
         else:
             t = [0, 1]
-
+        print("1111111111")
         nsp_target = torch.Tensor(t)
 
         return (
@@ -96,16 +96,27 @@ class IMDBBertDataset(Dataset):
         sentence_lens = []
 
         # Split dataset on sentences
+        # 一文ずつ分割する
         for review in self.ds:
             review_sentences = review.split('. ')
             sentences += review_sentences
             self._update_length(review_sentences, sentence_lens)
         self.optimal_sentence_length = self._find_optimal_sentence_length(sentence_lens)
+        print(f'70%以下が属する文字数の閾値：{self.optimal_sentence_length}')
 
+        print(f'分割後１文目：{sentences[0]}')
+        print(f'分割後２文目：{sentences[1]}')
         print("Create vocabulary")
+
+        # tqdm = プログレスバー
         for sentence in tqdm(sentences):
             s = self.tokenizer(sentence)
             self.counter.update(s)
+        # print(f'tokenizerの使用確認：{sentences[0]}')
+        # One of the other reviewers has mentioned that after watching just 1 Oz episode you'll be hooked
+        # print(f'分割後２文目：{self.tokenizer(sentences[0])}')
+        # ['one', 'of', 'the', 'other', 'reviewers', 'has', 'mentioned', 'that', 'after', 'watching',
+        #  'just', '1', 'oz', 'episode', 'you', "'", 'll', 'be', 'hooked']
 
         self._fill_vocab()
 
@@ -138,15 +149,19 @@ class IMDBBertDataset(Dataset):
     def _fill_vocab(self):
         # specials= argument is only in 0.12.0 version
         # specials=[self.CLS, self.PAD, self.MASK, self.SEP, self.UNK]
+        # 最小2で数値と単語を一対一対応してるわけ
         self.vocab = vocab(self.counter, min_freq=2)
-
+        # print(f'vocabの中身{self.vocab.get_stoi()}')
         # 0.11.0 uses this approach to insert specials
         self.vocab.insert_token(self.CLS, 0)
         self.vocab.insert_token(self.PAD, 1)
         self.vocab.insert_token(self.MASK, 2)
         self.vocab.insert_token(self.SEP, 3)
         self.vocab.insert_token(self.UNK, 4)
+        # それ以外を4にデフォで設定している
         self.vocab.set_default_index(4)
+        # print(self.vocab.lookup_indices(["[CLS]", "haruboring", "this", "works", "[MASK]", "well"]))
+        # [0, 4, 29, 1671, 2, 159]
 
     def _create_item(self, first: typing.List[str], second: typing.List[str], target: int = 1):
         # Create masked sentence item
@@ -162,6 +177,7 @@ class IMDBBertDataset(Dataset):
         second, _ = self._preprocess_sentence(second.copy(), should_mask=False)
         original_nsp_sentence = first + [self.SEP] + second
         original_nsp_indices = self.vocab.lookup_indices(original_nsp_sentence)
+        # print(original_nsp_indices)
 
         if self.should_include_text:
             return (
