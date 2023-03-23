@@ -197,7 +197,10 @@ class IMDBBertDataset(Dataset):
         inverse_token_mask = None
         if should_mask:
             sentence, inverse_token_mask = self._mask_sentence(sentence)
-        sentence, inverse_token_mask = self._pad_sentence([self.CLS] + sentence, [True] + inverse_token_mask)
+        if inverse_token_mask == None:
+            sentence, inverse_token_mask = self._pad_sentence([self.CLS] + sentence, [True])
+        else:
+            sentence, inverse_token_mask = self._pad_sentence([self.CLS] + sentence, [True] + inverse_token_mask)
 
         return sentence, inverse_token_mask
 
