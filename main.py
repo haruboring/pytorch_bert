@@ -1,3 +1,4 @@
+# type: ignore
 import datetime
 
 import torch
@@ -28,7 +29,7 @@ if torch.cuda.is_available():
 
 if __name__ == '__main__':
     print("Prepare dataset")
-    ds = IMDBBertDataset(BASE_DIR.joinpath('data/imdb.csv'), ds_from=0, ds_to=1000)
+    ds = IMDBBertDataset(BASE_DIR.joinpath('data/imdb.csv'), ds_from=0, ds_to=1000, should_include_text=True)
 
     bert = BERT(len(ds.vocab), EMB_SIZE, HIDDEN_SIZE, NUM_HEADS).to(device)
     trainer = BertTrainer(

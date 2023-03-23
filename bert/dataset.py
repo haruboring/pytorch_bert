@@ -1,3 +1,4 @@
+# type: ignore
 import random
 import typing
 from collections import Counter
@@ -6,12 +7,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-
-from tqdm import tqdm
 from torch.utils.data import Dataset
-from torchtext.vocab import vocab
 from torchtext.data.utils import get_tokenizer
-
+from torchtext.vocab import vocab
+from tqdm import tqdm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -33,12 +32,14 @@ class IMDBBertDataset(Dataset):
     OPTIMAL_LENGTH_PERCENTILE = 70
 
     def __init__(self, path, ds_from=None, ds_to=None, should_include_text=False):
+        # レビューのseries作ってる
         self.ds: pd.Series = pd.read_csv(path)['review']
-
+        # 使うdataの範囲が制限されてる場合はその範囲内を用いる
         if ds_from is not None or ds_to is not None:
             self.ds = self.ds[ds_from:ds_to]
-
+        # 文章を語彙（トークン）に分割したうえで、BERTモデルに入力できる形に変換する処理
         self.tokenizer = get_tokenizer('basic_english')
+        # 出現回数が多い順に要素を取得できたりするって話
         self.counter = Counter()
         self.vocab = None
 
@@ -46,11 +47,16 @@ class IMDBBertDataset(Dataset):
         self.should_include_text = should_include_text
 
         if should_include_text:
-            self.columns = ['masked_sentence', self.MASKED_INDICES_COLUMN, 'sentence', self.TARGET_COLUMN,
+            self.columns = ['masked_sentence',
+                            self.MASKED_INDICES_COLUMN,
+                            'sentence',
+                            self.TARGET_COLUMN,
                             self.TOKEN_MASK_COLUMN,
                             self.NSP_TARGET_COLUMN]
         else:
-            self.columns = [self.MASKED_INDICES_COLUMN, self.TARGET_COLUMN, self.TOKEN_MASK_COLUMN,
+            self.columns = [self.MASKED_INDICES_COLUMN,
+                            self.TARGET_COLUMN,
+                            self.TOKEN_MASK_COLUMN,
                             self.NSP_TARGET_COLUMN]
 
         self.df = self.prepare_dataset()
@@ -253,5 +259,5 @@ if __name__ == '__main__':
     BASE_DIR = Path(__file__).resolve().parent.parent
 
     ds = IMDBBertDataset(BASE_DIR.joinpath('data/imdb.csv'), ds_from=0, ds_to=50000,
-                         should_include_text=True)
+                        should_include_text=True)
     print(ds.df)
